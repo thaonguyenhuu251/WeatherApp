@@ -4,36 +4,27 @@ import static com.example.weatherapp.R.string.time_weather;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.utils.widget.ImageFilterButton;
-import androidx.constraintlayout.widget.ConstraintLayout;
+
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
+import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.bumptech.glide.Glide;
 import com.example.weatherapp.databinding.ActivityMainBinding;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.squareup.picasso.Picasso;
@@ -55,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<WeatherTimeModel> weatherTimeModelArrayList;
     private WeatherTimeAdapter weatherTimeAdapter;
     private LocationManager locationManager;
-    private String cityName = "HaNoi";
+    private String cityName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,57 +148,54 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getWeatherInformation(String cityName) {
-        String url = "http://api.weatherapi.com/v1/forecast.json?key=5a95dd7a295241668db101146220310&q=HaNoi&days=1&aqi=yes&alerts=yes";
+        String url = "http://api.weatherapi.com/v1/forecast.json?key=5a95dd7a295241668db101146220310&q=Ha Noi&days=1&aqi=yes&alerts=yes";
         binding.includeInformationWeather.txtLocal.setText(cityName);
         RequestQueue requestQueue = Volley.newRequestQueue(MainActivity.this);
 
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null, response -> {
+            weatherTimeModelArrayList.clear();
+            try {
+                String locationName = response.getJSONObject("location").getString("name");
+                binding.includeInformationWeather.txtLocal.setText(locationName);
 
-            @Override
-            public void onResponse(JSONObject response) {
-                try {
-                    String locationName = response.getJSONObject("location").getString("name");
-                    binding.includeInformationWeather.txtLocal.setText(locationName);
+                double temperature = response.getJSONObject("current").getDouble("temp_c");
+                binding.includeInformationWeather.txtTemplate.setText(String.valueOf(temperature));
 
-                    String temperature = response.getJSONObject("current").getString("temp_c");
-                    binding.includeInformationWeather.txtTemplate.setText(String.format("%s%s", temperature, getString(R.string.celsius_symbol)));
-                    int isDay = response.getJSONObject("current").getInt("is_day");
-                    String conditionText = response.getJSONObject("current").getJSONObject("condition").getString("text");
-                    String conditionIcon = response.getJSONObject("current").getJSONObject("condition").getString("icon");
 
-                    Picasso.get().load("http:".concat(conditionIcon)).into(binding.includeInformationWeather.imageView);
+                int isDay = response.getJSONObject("current").getInt("is_day");
+                String conditionText = response.getJSONObject("current").getJSONObject("condition").getString("text");
+                String conditionIcon = response.getJSONObject("current").getJSONObject("condition").getString("icon");
 
-                    if (isDay == 1) {
-                        //morning
-                        //Picasso.get().load("").into(binding.includeInformationWeather.imageView);
-                    } else {
+                Picasso.get().load("http:".concat(conditionIcon)).into(binding.includeInformationWeather.imageView);
 
-                    }
+                if (isDay == 1) {
+                    //morning
+                    //Picasso.get().load("").into(binding.includeInformationWeather.imageView);
+                } else {
 
-                    JSONObject forecastObj = response.getJSONObject("forecast");
-                    JSONObject forecast0 = forecastObj.getJSONArray("forecastday").getJSONObject(0);
-
-                    JSONArray hourArray = forecast0.getJSONArray("hour");
-
-                    for(int i = 0; i < hourArray.length(); i++) {
-                        JSONObject hourObj = hourArray.getJSONObject(i);
-                        String time = hourObj.getString("time");
-                        String temper = hourObj.getString("temp_c");
-                        String img = hourObj.getJSONObject("time").getString("icon");
-                        String wind = hourObj.getString("wind_kph");
-                        weatherTimeModelArrayList.add(new WeatherTimeModel(time, temper, img, wind));
-                    }
-
-                    weatherTimeAdapter.notifyDataSetChanged();
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
                 }
+
+                JSONObject forecastObj = response.getJSONObject("forecast");
+                JSONObject forecast0 = forecastObj.getJSONArray("forecastday").getJSONObject(0);
+
+                JSONArray hourArray = forecast0.getJSONArray("hour");
+
+                for(int i = 0; i < hourArray.length(); i++) {
+                    JSONObject hourObj = hourArray.getJSONObject(i);
+                    String time = hourObj.getString("time");
+                    String temper = hourObj.getString("temp_c");
+                    String img = hourObj.getJSONObject("time").getString("icon");
+                    String wind = hourObj.getString("wind_kph");
+                    weatherTimeModelArrayList.add(new WeatherTimeModel(time, temper, img, wind));
+                }
+
+                weatherTimeAdapter.notifyDataSetChanged();
+
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
         }, error -> Toast.makeText(MainActivity.this, "Please enter valid city name...", Toast.LENGTH_SHORT).show());
 
         requestQueue.add(jsonObjectRequest);
     }
-
-
 }
