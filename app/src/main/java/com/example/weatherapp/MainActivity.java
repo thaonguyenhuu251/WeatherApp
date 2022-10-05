@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(view);
         setBottomSheetBehavior();
-
+        setDataTime();
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED
@@ -78,12 +78,11 @@ public class MainActivity extends AppCompatActivity {
                             Manifest.permission.ACCESS_COARSE_LOCATION},
                     Constants.PERMISSION_CODE
             );
-
-            Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            cityName = getCityName(location.getLongitude(), location.getLatitude());
-            getWeatherInformation(cityName);
         }
-        setDataTime();
+        Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        cityName = getCityName(location.getLongitude(), location.getLatitude());
+        getWeatherInformation(cityName);
+
     }
 
     @Override
